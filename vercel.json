@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "Bot.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "static/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "Bot.py"
+    }
+  ],
+  "env": {
+    "PANEL_SECRET_KEY": "your_strong_secret_key_here",
+    "ADMIN_USER": "hama",
+    "ADMIN_PASS": "1211",
+    "SERVER_PORT": "7860"
+  }
+}

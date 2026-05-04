@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RAGNAR HOST</title>
+
+  <style>
+    :root{
+      --bg0:#05060a;--bg1:#070a12;
+      --glass:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.10);
+      --muted:rgba(255,255,255,.65);
+      --text:rgba(255,255,255,.92);
+      --accent:#00d4ff;--accent2:#7b61ff;
+      --danger:#ff4d4d;--ok:#33ff99;--warn:#ffd166;
+      --shadow:0 18px 60px rgba(0,0,0,.55);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:
+        radial-gradient(1200px 600px at 10% 10%, rgba(0,212,255,.25), transparent 60%),
+        radial-gradient(900px 500px at 90% 20%, rgba(123,97,255,.22), transparent 55%),
+        radial-gradient(800px 500px at 40% 90%, rgba(51,255,153,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      overflow-x:hidden;
+    }
+    body:before{
+      content:"";position:fixed;inset:0;pointer-events:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+      opacity:.22;mix-blend-mode:overlay;
+    }
+
+    .topbar{
+      position:sticky;top:0;z-index:20;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background: rgba(0,0,0,.35);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar-inner{
+      max-width:1200px;margin:0 auto;
+      padding:14px 18px;
+      display:flex;gap:12px;
+      align-items:center;justify-content:space-between;
+    }
+    .brand{
+      display:flex;align-items:center;gap:12px;
+      font-weight:900;letter-spacing:.8px;text-transform:uppercase;
+    }
+    .brand .logo{
+      width:38px;height:38px;border-radius:12px;
+      cursor:pointer;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(0,212,255,.9), transparent 60%),
+        radial-gradient(circle at 70% 70%, rgba(123,97,255,.7), transparent 55%),
+        rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: 0 10px 30px rgba(0,212,255,.15);
+      display:grid;place-items:center;
+    }
+    .brand .title{color:var(--accent);font-size:15px;line-height:1.1}
+    .brand .sub{
+      display:block;font-weight:700;color:rgba(255,255,255,.6);
+      font-size:11px;letter-spacing:.2px;margin-top:2px;text-transform:none
+    }
+
+    .actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .btn{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding:10px 14px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .btn:hover{transform: translateY(-1px); border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.09);}
+    .btn-primary{
+      background: linear-gradient(135deg, rgba(0,212,255,.95), rgba(123,97,255,.85));
+      color:#00131c;
+      border:0;
+      box-shadow: 0 14px 40px rgba(0,212,255,.18);
+    }
+    .btn-danger{
+      background: rgba(255,77,77,.12);
+      border-color: rgba(255,77,77,.25);
+      color: rgba(255,220,220,.95);
+    }
+    .btn-mini{padding:7px 10px;border-radius:10px;font-size:11px}
+    .btn-open{
+      background: linear-gradient(135deg, rgba(51,255,153,.8), rgba(0,212,255,.7));
+      color:#00131c;
+      border:0;
+    }
+
+    .container{max-width:1200px;margin:20px auto 60px;padding:0 18px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    @media (max-width:1050px){.grid{grid-template-columns:repeat(3,1fr)}}
+    @media (max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:480px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border-radius: var(--radius);
+      padding:16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      cursor:pointer;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+      position:relative;
+      overflow:hidden;
+      min-height: 140px;
+    }
+    .card:hover{transform: translateY(-3px);border-color: rgba(0,212,255,.35)}
+    .srv-title{font-weight:950;letter-spacing:.6px;text-transform:uppercase;font-size:14px;margin:0}
+    .srv-sub{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.35}
+
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:5px 10px;border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.18);
+      font-size:11px;font-weight:900;
+      letter-spacing:.4px;margin-top:10px;
+      text-transform:uppercase;
+    }
+    .dot{width:8px;height:8px;border-radius:50%}
+    .pill.running .dot{background:var(--ok)}
+    .pill.installing .dot{background:var(--warn)}
+    .pill.banned .dot{background:var(--danger)}
+    .pill.offline .dot{background:rgba(255,255,255,.35)}
+
+    #serverView{display:none}
+    .header-row{
+      display:flex;align-items:flex-start;justify-content:space-between;
+      gap:12px;flex-wrap:wrap;margin-top:10px
+    }
+    .hleft h1{margin:0;font-size:22px;font-weight:950;letter-spacing:.8px;text-transform:uppercase}
+    .hleft .muted{margin-top:6px;color:var(--muted);font-size:12px}
+
+    .tabs{display:flex;gap:10px;align-items:center}
+    .tab{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding:10px 14px;border-radius: 12px;
+      cursor:pointer;font-weight:900;font-size:12px;
+    }
+    .tab.active{
+      background: linear-gradient(135deg, rgba(0,212,255,.95), rgba(123,97,255,.85));
+      color:#00131c;border:0;
+      box-shadow: 0 14px 40px rgba(0,212,255,.18);
+    }
+
+    .panel{
+      margin-top:14px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border-radius: var(--radius);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .grid-2{display:grid;grid-template-columns: 1fr 340px;gap:14px;padding:14px}
+    @media (max-width:980px){.grid-2{grid-template-columns:1fr}}
+
+    .console{
+      background: rgba(0,0,0,.45);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      padding:14px;
+      height: 560px;
+      overflow:auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:13px;
+      line-height:1.45;
+      white-space:pre-wrap;
+      color: rgba(235,245,255,.86);
+    }
+    .side{display:flex;flex-direction:column;gap:10px}
+
+    .btn-block{
+      width:100%;
+      padding:12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font-weight:950;
+      cursor:pointer;
+      transition: .12s ease;
+    }
+    .btn-block:hover{transform: translateY(-1px); background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.18)}
+    .btn-block.primary{
+      background: linear-gradient(135deg, rgba(0,212,255,.95), rgba(123,97,255,.85));
+      color:#00131c; border:0;
+    }
+    .btn-block.danger{
+      background: rgba(255,77,77,.12);
+      border-color: rgba(255,77,77,.25);
+      color: rgba(255,220,220,.95);
+    }
+
+    .stat{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 16px;
+      padding:12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .stat .ico{
+      width:36px;height:36px;border-radius:14px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10)
+    }
+    .stat small{display:block;color:var(--muted);font-weight:800;letter-spacing:.4px}
+    .stat b{display:block;margin-top:4px;font-size:13px}
+    #mainFileTxt{color:var(--accent);cursor:pointer}
+    #openProjectBtn{color:var(--ok);cursor:pointer}
+
+    .fm-top{
+      display:flex;align-items:flex-start;justify-content:space-between;
+      gap:12px;flex-wrap:wrap;
+      padding:14px;border-bottom:1px solid rgba(255,255,255,.08)
+    }
+    .path{color:var(--muted);font-size:12px;margin-top:6px}
+    .crumb a{color:var(--accent);text-decoration:none;font-weight:900}
+    .crumb .sep{color:rgba(255,255,255,.35);padding:0 6px}
+
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
+    .table th{color:rgba(255,255,255,.75);font-weight:950;text-transform:uppercase;letter-spacing:.5px;font-size:11px}
+    .name-link{color:var(--accent);font-weight:900;cursor:pointer}
+    .row-actions{white-space:nowrap}
+
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.75);
+      display:none;
+      align-items:center; justify-content:center;
+      z-index:50;
+      padding:18px;
+    }
+    .modal{
+      width:100%;
+      max-width:420px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding:16px;
+    }
+    .modal h3{margin:0 0 10px 0}
+    .modal input{
+      width:100%;
+      padding:12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.35);
+      color: var(--text);
+      outline:none;
+    }
+
+    #editor-modal{
+      display:none;
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.82);
+      z-index:60;
+      padding:18px;
+    }
+    .editor{
+      height:100%;
+      max-width:1200px;
+      margin:0 auto;
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(10,14,22,.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .editor-top{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .editor-top .fn{font-weight:950;color:var(--accent);word-break:break-all}
+    #ed-area{
+      flex:1;
+      background: transparent;
+      color: rgba(235,245,255,.9);
+      border:0;
+      outline:none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:13px;
+      padding:14px;
+      resize:none;
+      line-height:1.5;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="logo" role="button" tabindex="0" title="Home"
+             onclick="location.href='/'"
+             onkeypress="if(event.key==='Enter') location.href='/'">🖥️</div>
+        <div>
+          <div class="title">RAGNAR HOST</div>
+          <span class="sub" id="pyHostTxt">Python Host: loading...</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="adminBtn" class="btn" style="display:none" onclick="location.href='/admin'">Admin</button>
+        <button id="homeBtn" class="btn" style="display:none" onclick="goHome()">Home</button>
+        <button id="newBtn" class="btn btn-primary">+ New Server</button>
+        <button class="btn btn-danger" onclick="location.href='/logout'">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="container" id="homeView">
+    <div class="grid" id="cardsContainer"></div>
+  </div>
+
+  <!-- SERVER VIEW -->
+  <div class="container" id="serverView">
+    <div class="header-row">
+      <div class="hleft">
+        <h1 id="srvHeader">SERVER</h1>
+        <div class="muted" id="srvSub">Manage your server</div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" id="tabConsole" onclick="switchTab('console')">Console</button>
+        <button class="tab" id="tabFiles" onclick="switchTab('files')">File Manager</button>
+      </div>
+    </div>
+
+    <!-- Console -->
+    <div class="panel" id="viewConsole">
+      <div class="grid-2">
+        <div class="console" id="logOut">Initializing...</div>
+        <div class="side">
+          <button id="btnStart" class="btn-block primary" onclick="srvAction('start')">START</button>
+          <button class="btn-block" onclick="srvAction('restart')">RESTART</button>
+          <button class="btn-block danger" onclick="srvAction('stop')">STOP</button>
+          <button id="openProjectBtn" class="btn-block btn-open" onclick="openProject()" style="display:none">🌐 Open Project</button>
+
+          <div class="stat"><div class="ico">⚡</div><div><small>STATUS</small><b id="statusTxt">Offline</b></div></div>
+          <div class="stat"><div class="ico">🧠</div><div><small>RAM</small><b id="memTxt">0 MB</b></div></div>
+          <div class="stat"><div class="ico">💿</div><div><small>MAIN FILE</small><b id="mainFileTxt" onclick="changeStartup()">Click to set</b></div></div>
+          <div class="stat"><div class="ico">🌐</div><div><small>PORT</small><b id="portTxt" onclick="changePort()">5000 (click to change)</b></div></div>
+          <div class="stat"><div class="ico">📡</div><div><small>IP</small><b id="ipTxt">0.0.0.0</b></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Files -->
+    <div class="panel" id="viewFiles" style="display:none">
+      <div class="fm-top">
+        <div>
+          <div style="font-weight:950;font-size:16px">File Manager</div>
+          <div class="path" id="pathBar"></div>
+        </div>
+        <div class="actions">
+          <button id="btnBack" class="btn btn-mini" onclick="goUp()" style="display:none">⬅ Back</button>
+          <button class="btn btn-mini" onclick="newFolder()">📁 Create Folder</button>
+          <button class="btn btn-mini btn-primary" onclick="document.getElementById('uplFiles').click()">Upload Files</button>
+          <button class="btn btn-mini" onclick="document.getElementById('uplFolder').click()">Upload Folder</button>
+        </div>
+      </div>
+
+      <input type="file" id="uplFiles" multiple hidden onchange="doUploadFiles(this)">
+      <input type="file" id="uplFolder" webkitdirectory directory multiple hidden onchange="doUploadFolder(this)">
+
+      <table class="table">
+        <thead><tr><th>Name</th><th>Size</th><th>Actions</th></tr></thead>
+        <tbody id="fileList"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <div id="editor-modal">
+    <div class="editor">
+      <div class="editor-top">
+        <div class="fn" id="ed-title">file</div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="saveFile()">Save</button>
+          <button class="btn btn-danger" onclick="closeEditor()">Exit</button>
+        </div>
+      </div>
+      <textarea id="ed-area" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <h3 id="mTitle">Title</h3>
+      <input id="mIn" />
+      <div class="actions" style="justify-content:flex-end;margin-top:12px">
+        <button class="btn" onclick="closeM()">Cancel</button>
+        <button id="mConfirm" class="btn btn-primary">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let currentSrv = null, poll = null, currentFile = null;
+  let currentPath = '';
+  let currentUrl = '';
+  let currentPort = 5000;
+
+  function isAuthPage(){
+    return location.pathname.startsWith('/login') || location.pathname.startsWith('/create');
+  }
+
+  function safeRedirect(url){
+    if (!isAuthPage()) location.href = url;
+  }
+
+  function statusClass(st){
+    st = (st||'').toLowerCase();
+    if(st==='running') return 'running';
+    if(st==='installing' || st==='starting') return 'installing';
+    if(st==='banned') return 'banned';
+    return 'offline';
+  }
+
+  async function loadPythonHost(){
+    const ipTxt = document.getElementById('pyHostTxt');
+    try{
+      const r = await fetch('/servers');
+      if (r.redirected){ safeRedirect(r.url); return; }
+      const d = await r.json();
+
+      const port = location.port || 5000;
+      if(!d.servers || d.servers.length === 0){
+        ipTxt.textContent = `Python Host: ${location.hostname}:${port}`;
+        return;
+      }
+
+      const key = d.servers[0].key || d.servers[0].folder;
+      const s = await fetch(`/server/stats/${encodeURIComponent(key)}`);
+      if (s.redirected){ safeRedirect(s.url); return; }
+      const sd = await s.json();
+      const ip = sd.ip || location.hostname;
+      ipTxt.textContent = `Python Host: ${ip}:${port}`;
+    }catch(e){
+      const port = location.port || 5000;
+      ipTxt.textContent = `Python Host: ${location.hostname}:${port}`;
+    }
+  }
+
+  async function loadServers() {
+    const r = await fetch('/servers');
+    if (r.redirected){ safeRedirect(r.url); return; }
+    const d = await r.json();
+    const cont = document.getElementById('cardsContainer');
+    cont.innerHTML = '';
+
+    fetch('/admin').then(res=>{
+      if(!res.redirected && res.status===200) document.getElementById('adminBtn').style.display='inline-block';
+    }).catch(()=>{});
+
+    (d.servers || []).forEach(s => {
+      s.key = s.key || s.folder;
+
+      const div = document.createElement('div');
+      div.className = 'card';
+      const cls = statusClass(s.status);
+      const label = (s.status || 'Offline').toUpperCase();
+
+      div.innerHTML = `
+        <div class="srv-title">${escapeHtml(s.title)}</div>
+        <div class="srv-sub">${escapeHtml(s.subtitle || '')}</div>
+        <div class="pill ${cls}"><span class="dot"></span>${label}</div>
+      `;
+      div.onclick = () => openServer(s);
+      cont.appendChild(div);
+    });
+  }
+
+  function openServer(s) {
+    currentSrv = s;
+    currentPath = '';
+
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('serverView').style.display = 'block';
+    document.getElementById('homeBtn').style.display = 'inline-block';
+    document.getElementById('newBtn').style.display = 'none';
+
+    document.getElementById('srvHeader').textContent = s.title;
+    document.getElementById('srvSub').textContent = s.subtitle || '';
+    document.getElementById('mainFileTxt').textContent = s.startup_file || "Click to set";
+    document.getElementById('portTxt').textContent = (s.port || 5000) + " (click to change)";
+    currentPort = s.port || 5000;
+
+    switchTab('console');
+  }
+
+  function goHome() {
+    document.getElementById('homeView').style.display='block';
+    document.getElementById('serverView').style.display='none';
+    document.getElementById('homeBtn').style.display='none';
+    document.getElementById('newBtn').style.display='inline-block';
+    if(poll) clearInterval(poll);
+    poll = null;
+    loadServers();
+  }
+
+  function switchTab(t) {
+    document.getElementById('tabConsole').classList.toggle('active', t==='console');
+    document.getElementById('tabFiles').classList.toggle('active', t==='files');
+
+    document.getElementById('viewConsole').style.display = t === 'console' ? 'block' : 'none';
+    document.getElementById('viewFiles').style.display = t === 'files' ? 'block' : 'none';
+
+    if(t === 'console') startPolling();
+    else { 
+      if(poll) clearInterval(poll);
+      poll = null;
+      loadFiles(); 
+    }
+  }
+
+  async function startPolling() {
+    if(poll) clearInterval(poll);
+
+    const fn = async () => {
+      try {
+        const r = await fetch(`/server/stats/${encodeURIComponent(currentSrv.key)}`);
+        if (r.redirected){ safeRedirect(r.url); return; }
+        const d = await r.json();
+
+        document.getElementById('logOut').textContent = d.logs || "No logs";
+        document.getElementById('statusTxt').textContent = d.status || 'Offline';
+        document.getElementById('memTxt').textContent = d.mem || '0 MB';
+        document.getElementById('ipTxt').textContent = d.ip || '';
+        if (d.port) {
+          document.getElementById('portTxt').textContent = d.port + " (click to change)";
+          currentPort = d.port;
+        }
+        if (d.url) {
+          currentUrl = d.url;
+          document.getElementById('openProjectBtn').style.display = 'block';
+        } else {
+          document.getElementById('openProjectBtn').style.display = 'none';
+        }
+
+        const running = (d.status === "Running" || d.status === "Installing" || d.status === "Starting");
+        document.getElementById('btnStart').disabled = running;
+
+        const lo = document.getElementById('logOut');
+        lo.scrollTop = lo.scrollHeight;
+      } catch(e) {}
+    };
+
+    fn();
+    poll = setInterval(fn, 2000);
+  }
+
+  async function srvAction(act) {
+    await fetch(`/server/action/${encodeURIComponent(currentSrv.key)}/${act}`, {method:'POST'});
+    if (act === 'start') {
+      setTimeout(() => startPolling(), 500);
+    }
+  }
+
+  function openProject() {
+    if (currentUrl) {
+      window.open(currentUrl, '_blank');
+    } else {
+      alert("Project URL not available. Make sure it's running and is a web project.");
+    }
+  }
+
+  function changeStartup() {
+    openM("Set Main File (example: bot.py or app.py)", currentSrv.startup_file || "", async (v) => {
+      await fetch(`/server/set-startup/${encodeURIComponent(currentSrv.key)}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({file:v})
+      });
+      currentSrv.startup_file = v;
+      document.getElementById('mainFileTxt').textContent = v || "Click to set";
+      closeM();
+    });
+  }
+
+  function changePort() {
+    openM("Set Port (1024-65535)", currentPort, async (v) => {
+      const portNum = parseInt(v);
+      if (isNaN(portNum) || portNum < 1024 || portNum > 65535) {
+        alert("Port must be between 1024 and 65535");
+        closeM();
+        return;
+      }
+      await fetch(`/server/set-port/${encodeURIComponent(currentSrv.key)}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({port: portNum})
+      });
+      currentPort = portNum;
+      document.getElementById('portTxt').textContent = portNum + " (click to change)";
+      closeM();
+      alert("Port changed. Restart server for changes to take effect.");
+    });
+  }
+
+  async function loadFiles() {
+    const r = await fetch(`/files/list/${encodeURIComponent(currentSrv.key)}?path=${encodeURIComponent(currentPath)}`);
+    if (r.redirected){ safeRedirect(r.url); return; }
+    const data = await r.json();
+    if (!data.success) { currentPath = ''; return loadFiles(); }
+
+    document.getElementById("btnBack").style.display = (currentPath && currentPath.length > 0) ? "inline-block" : "none";
+
+    const parts = (data.path || '').split('/').filter(Boolean);
+    let acc = '';
+    const crumbs = [`<span class="crumb"><a href="javascript:void(0)" onclick="jumpPath('')">root</a></span>`];
+    for (const p of parts) {
+      acc = acc ? (acc + '/' + p) : p;
+      crumbs.push(`<span class="sep">/</span><span class="crumb"><a href="javascript:void(0)" onclick="jumpPath('${encodeURIComponent(acc)}')">${escapeHtml(p)}</a></span>`);
+    }
+    document.getElementById('pathBar').innerHTML = crumbs.join('');
+
+    const rows = [];
+
+    for (const d of (data.dirs || [])) {
+      const name = d.name;
+      rows.push(`
+        <tr>
+          <td><span class="name-link" onclick="openFolder('${encodeURIComponent(name)}')">📁 ${escapeHtml(name)}</span></td>
+          <td style="color:var(--muted)">—</td>
+          <td class="row-actions">
+            <button class="btn btn-mini" onclick="openFolder('${encodeURIComponent(name)}')">Open</button>
+            <button class="btn btn-mini" onclick="renameDir('${encodeURIComponent(name)}')">Rename</button>
+            <button class="btn btn-mini btn-danger" onclick="deleteDir('${encodeURIComponent(name)}')">Delete</button>
+          </td>
+        </tr>
+      `);
+    }
+
+    for (const f of (data.files || [])) {
+      const relFile = currentPath ? `${currentPath}/${f.name}` : f.name;
+      rows.push(`
+        <tr>
+          <td><span class="name-link" onclick="openEditor('${encodeURIComponent(relFile)}')">📄 ${escapeHtml(f.name)}</span></td>
+          <td>${escapeHtml(f.size || '')}</td>
+          <td class="row-actions">
+            <button class="btn btn-mini" onclick="renameFilePrompt('${encodeURIComponent(f.name)}')">Rename</button>
+            <button class="btn btn-mini btn-danger" onclick="deleteFilePrompt('${encodeURIComponent(f.name)}')">Delete</button>
+          </td>
+        </tr>
+      `);
+    }
+
+    document.getElementById('fileList').innerHTML = rows.join('');
+  }
+
+  function openFolder(name) {
+    currentPath = currentPath ? (currentPath + '/' + name) : name;
+    loadFiles();
+  }
+  function jumpPath(p) { currentPath = decodeURIComponent(p) || ''; loadFiles(); }
+  function goUp() {
+    if (!currentPath) return;
+    const parts = currentPath.split('/').filter(Boolean);
+    parts.pop();
+    currentPath = parts.join('/');
+    loadFiles();
+  }
+
+  function newFolder() {
+    openM("Create Folder", "", async (v) => {
+      await fetch(`/files/mkdir/${encodeURIComponent(currentSrv.key)}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({path: currentPath, name: v})
+      });
+      loadFiles();
+      closeM();
+    });
+  }
+
+  function renameDir(oldName) {
+    openM("Rename Folder", oldName, async (v) => {
+      await fetch(`/files/rename/${encodeURIComponent(currentSrv.key)}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({path: currentPath, old: oldName, new: v})
+      });
+      loadFiles();
+      closeM();
+    });
+  }
+
+  async function deleteDir(name) {
+    if(!confirm(`Delete folder "${name}" and all inside?`)) return;
+    await fetch(`/files/delete/${encodeURIComponent(currentSrv.key)}`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({path: currentPath, name, kind:'dir'})
+    });
+    loadFiles();
+  }
+
+  function renameFilePrompt(oldName) {
+    openM("Rename File", oldName, async (v) => {
+      await fetch(`/files/rename/${encodeURIComponent(currentSrv.key)}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({path: currentPath, old: oldName, new: v})
+      });
+      loadFiles();
+      closeM();
+    });
+  }
+
+  async function deleteFilePrompt(name) {
+    if(!confirm(`Delete ${name}?`)) return;
+    await fetch(`/files/delete/${encodeURIComponent(currentSrv.key)}`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({path: currentPath, name, kind:'file'})
+    });
+    loadFiles();
+  }
+
+  async function doUploadFiles(input) {
+    if (!input.files || !input.files.length) return;
+    const fd = new FormData();
+    for (const f of input.files) fd.append("files", f);
+    await fetch(`/files/upload/${encodeURIComponent(currentSrv.key)}?path=${encodeURIComponent(currentPath)}`, {
+      method:"POST",
+      body: fd
+    });
+    input.value = "";
+    loadFiles();
+  }
+
+  async function doUploadFolder(input) {
+    if (!input.files || !input.files.length) return;
+    const fd = new FormData();
+    for (const f of input.files) {
+      fd.append("files", f);
+      fd.append("relpaths", f.webkitRelativePath || f.name);
+    }
+    await fetch(`/files/upload/${encodeURIComponent(currentSrv.key)}?path=${encodeURIComponent(currentPath)}`, {
+      method:"POST",
+      body: fd
+    });
+    input.value = "";
+    loadFiles();
+  }
+
+  async function openEditor(name) {
+    currentFile = decodeURIComponent(name);
+    document.getElementById('ed-title').textContent = currentFile;
+
+    const res = await fetch(`/files/content/${encodeURIComponent(currentSrv.key)}?file=${encodeURIComponent(currentFile)}`);
+    if (res.redirected){ safeRedirect(res.url); return; }
+
+    const data = await res.json();
+    document.getElementById('ed-area').value = data.content || '';
+    document.getElementById('editor-modal').style.display = 'block';
+  }
+
+  async function saveFile() {
+    await fetch(`/files/save/${encodeURIComponent(currentSrv.key)}`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({file: currentFile, content: document.getElementById('ed-area').value})
+    });
+    alert("Saved ✅");
+  }
+
+  function closeEditor(){ document.getElementById('editor-modal').style.display='none'; }
+
+  function openM(t, v, cb) {
+    document.getElementById('modalBackdrop').style.display='flex';
+    document.getElementById('mTitle').textContent=t;
+    document.getElementById('mIn').value=v || "";
+    document.getElementById('mConfirm').onclick=()=>cb(document.getElementById('mIn').value);
+  }
+  function closeM(){ document.getElementById('modalBackdrop').style.display='none'; }
+
+  document.getElementById('newBtn').onclick = () => openM("New Server Name", "", async (v) => {
+    const res = await fetch('/add', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name:v})
+    });
+    const d = await res.json().catch(()=>({success:false,message:'Error'}));
+    if(!d.success){ alert(d.message || 'Failed'); return; }
+    closeM();
+    loadServers();
+    loadPythonHost();
+  });
+
+  function escapeHtml(s){
+    return (s||'')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    loadServers();
+    loadPythonHost();
+  });
+</script>
+</body>
+</html>

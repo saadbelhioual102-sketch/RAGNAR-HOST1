@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Panel · RAGNAR HOST</title>
+  <style>
+    :root{--bg:#05060a;--muted:#99a3ad;--accent:#00d4ff;--border:rgba(255,255,255,.10);--card:rgba(255,255,255,.06);--shadow:0 18px 60px rgba(0,0,0,.55);--danger:#ff6b6b;--ok:#7CFF7C;--warn:#ffd166}
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;color:rgba(255,255,255,.92);
+      background:
+        radial-gradient(1200px 600px at 10% 10%, rgba(0,212,255,.25), transparent 60%),
+        radial-gradient(900px 500px at 90% 20%, rgba(123,97,255,.22), transparent 55%),
+        linear-gradient(180deg,#070a12,#05060a);
+    }
+    .top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.35);backdrop-filter:blur(14px);position:sticky;top:0}
+    .logo{font-weight:950;letter-spacing:1px;color:var(--accent);text-transform:uppercase}
+    .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:white;font-weight:900;cursor:pointer}
+    .btn:hover{background:rgba(255,255,255,.09)}
+    .btn-accent{border:0;background:linear-gradient(135deg, rgba(0,212,255,.95), rgba(123,97,255,.85));color:#00131c}
+    .wrap{max-width:1200px;margin:22px auto;padding:0 20px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    @media (max-width: 900px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width: 520px){.grid{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow);backdrop-filter:blur(16px)}
+    .k{color:var(--muted);font-size:12px}
+    .v{font-size:20px;font-weight:950;margin-top:6px}
+    h2{margin:22px 0 10px}
+    table{width:100%;border-collapse:collapse;background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);backdrop-filter:blur(14px)}
+    th,td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;font-size:13px}
+    th{color:rgba(255,255,255,.78);text-transform:uppercase;letter-spacing:.5px;font-size:11px}
+    .tag{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.10);font-weight:900;font-size:11px}
+    .tag.ok{color:var(--ok)} .tag.bad{color:var(--danger)} .tag.mid{color:var(--warn)}
+    .actions button{margin-right:6px;margin-top:4px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+    input, select{padding:10px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.35);color:#e9f2f7;outline:none}
+    .msg{margin-top:10px;color:var(--muted);font-size:12px}
+    .create-box{background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px}
+    .create-box h3{margin:0 0 12px 0;color:var(--accent)}
+    .create-grid{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+    .create-grid .field{flex:1;min-width:140px}
+    .create-grid label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div class="logo">Admin Panel</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" onclick="location.href='/'">Panel</button>
+      <button class="btn" onclick="location.href='/logout'">Logout</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- Stats -->
+    <div class="grid">
+      <div class="card"><div class="k">Servers Total</div><div class="v" id="st_total">0</div></div>
+      <div class="card"><div class="k">Running</div><div class="v" id="st_run">0</div></div>
+      <div class="card"><div class="k">Installing/Starting</div><div class="v" id="st_ins">0</div></div>
+      <div class="card"><div class="k">Banned Servers</div><div class="v" id="st_ban">0</div></div>
+    </div>
+
+    <div class="grid" style="margin-top:12px">
+      <div class="card"><div class="k">Users Total</div><div class="v" id="u_total">0</div></div>
+      <div class="card"><div class="k">Active Users</div><div class="v" id="u_active">0</div></div>
+      <div class="card"><div class="k">Premium Users</div><div class="v" id="u_premium">0</div></div>
+      <div class="card"><div class="k">Rules</div><div class="v" style="font-size:13px">Normal=1 server<br>Premium=16 servers</div></div>
+    </div>
+
+    <!-- Create New User Section -->
+    <div class="create-box">
+      <h3>➕ Create New User</h3>
+      <div class="create-grid">
+        <div class="field">
+          <input type="text" id="newUsername" placeholder="Username" style="width:100%">
+        </div>
+        <div class="field">
+          <input type="email" id="newEmail" placeholder="Email" style="width:100%">
+        </div>
+        <div class="field">
+          <input type="password" id="newPassword" placeholder="Password (min 6)" style="width:100%">
+        </div>
+        <div class="field">
+          <label>
+            <input type="checkbox" id="newPremium"> Premium (16 servers)
+          </label>
+        </div>
+        <div class="field">
+          <button class="btn btn-accent" onclick="createUser()" style="width:100%">Create User</button>
+        </div>
+      </div>
+      <div id="createMsg" class="msg"></div>
+    </div>
+
+    <div class="row">
+      <button class="btn btn-accent" onclick="refreshAll()">Refresh All</button>
+      <span class="msg" id="msg"></span>
+    </div>
+
+    <!-- Servers Table -->
+    <h2>📡 Servers</h2>
+    <table>
+      <thead><tr><th>Folder</th><th>Name</th><th>Owner</th><th>Main</th><th>Status</th><th>Ban</th></tr></thead>
+      <tbody id="serversT"></tbody>
+    </table>
+
+    <!-- Users Table -->
+    <h2 style="margin-top:26px">👥 Users</h2>
+    <div class="row"><input id="searchUser" placeholder="Search username..." oninput="filterUsers()" style="width:250px"></div>
+    <table>
+      <thead><tr><th>Username</th><th>Email</th><th>Servers</th><th>Active</th><th>Premium</th><th>Actions</th></tr></thead>
+      <tbody id="usersT"></tbody>
+    </table>
+
+    <div class="msg">Admin can ban/unban users and set premium. Create new users using the form above.</div>
+  </div>
+
+<script>
+let usersCache = [];
+
+function tagStatus(s){
+  const st=(s||'').toLowerCase();
+  if(st==='running') return '<span class="tag ok">RUNNING</span>';
+  if(st==='installing'||st==='starting') return '<span class="tag mid">INSTALLING</span>';
+  if(st==='banned') return '<span class="tag bad">BANNED</span>';
+  return '<span class="tag">OFFLINE</span>';
+}
+
+async function refreshStats(){
+  const r=await fetch('/api/admin/quickstats');
+  const d=await r.json();
+  const s=d.stats||{};
+  document.getElementById('st_total').textContent=s.servers_total||0;
+  document.getElementById('st_run').textContent=s.servers_running||0;
+  document.getElementById('st_ins').textContent=s.servers_installing||0;
+  document.getElementById('st_ban').textContent=s.servers_banned||0;
+  document.getElementById('u_total').textContent=s.users_total||0;
+  document.getElementById('u_active').textContent=s.users_active||0;
+  document.getElementById('u_premium').textContent=s.users_premium||0;
+}
+
+async function refreshServers(){
+  const r=await fetch('/api/admin/servers');
+  const d=await r.json();
+  const t=document.getElementById('serversT'); t.innerHTML='';
+  (d.servers||[]).forEach(s=>{
+    t.innerHTML += `
+      <tr>
+        <td>${escapeHtml(s.folder)}</td>
+        <td>${escapeHtml(s.display_name)}</td>
+        <td>${escapeHtml(s.owner)}</td>
+        <td>${escapeHtml(s.startup_file || '')}</td>
+        <td>${tagStatus(s.status)}</td>
+        <td class="actions">
+          ${s.banned
+            ? `<button class="btn" onclick="banServer('${escapeAttr(s.key || s.folder)}', false)">Unban</button>`
+            : `<button class="btn" style="border-color:rgba(255,107,107,.35);color:var(--danger)" onclick="banServer('${escapeAttr(s.key || s.folder)}', true)">Ban</button>`}
+        </td>
+      </tr>`;
+  });
+}
+
+async function banServer(folderOrKey, banned){
+  if(!confirm(banned ? 'Are you sure you want to BAN this server?' : 'Are you sure you want to UNBAN this server?')) return;
+  await fetch('/api/admin/server/ban',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key: folderOrKey, banned})
+  });
+  refreshAll();
+}
+
+async function refreshUsers(){
+  const r=await fetch('/api/admin/users');
+  const d=await r.json();
+  usersCache=d.users||[];
+  renderUsers(usersCache);
+}
+
+function renderUsers(arr){
+  const t=document.getElementById('usersT'); t.innerHTML='';
+  arr.forEach(u=>{
+    t.innerHTML += `
+      <tr>
+        <td>${escapeHtml(u.username)}</td>
+        <td>${escapeHtml(u.email || '')}</td>
+        <td>${u.servers}</td>
+        <td>${u.active ? '<span class="tag ok">ACTIVE</span>' : '<span class="tag bad">BANNED</span>'}</td>
+        <td>${u.premium ? '<span class="tag ok">PREMIUM</span>' : '<span class="tag">NORMAL</span>'}</td>
+        <td class="actions">
+          <button class="btn" onclick="setActive('${escapeAttr(u.username)}', ${!u.active})">${u.active ? 'Ban' : 'Unban'}</button>
+          <button class="btn" onclick="setPremium('${escapeAttr(u.username)}', ${!u.premium})">${u.premium ? 'Remove Premium' : 'Make Premium'}</button>
+        </td>
+      </tr>`;
+  });
+}
+
+async function setActive(username, active){
+  if(!confirm(active ? `Activate user "${username}"?` : `Ban user "${username}"?`)) return;
+  await fetch('/api/admin/user/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,active})});
+  refreshUsers(); refreshStats();
+}
+
+async function setPremium(username, premium){
+  await fetch('/api/admin/user/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,premium})});
+  refreshUsers(); refreshStats();
+}
+
+function filterUsers(){
+  const q=(document.getElementById('searchUser').value||'').toLowerCase().trim();
+  if(!q) return renderUsers(usersCache);
+  renderUsers(usersCache.filter(u => (u.username||'').toLowerCase().includes(q)));
+}
+
+async function createUser() {
+  const username = document.getElementById('newUsername').value.trim();
+  const email = document.getElementById('newEmail').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const premium = document.getElementById('newPremium').checked;
+  const msgDiv = document.getElementById('createMsg');
+  
+  if (!username || !email || !password) {
+    msgDiv.textContent = '❌ Please fill all fields';
+    msgDiv.style.color = 'var(--danger)';
+    return;
+  }
+  if (password.length < 6) {
+    msgDiv.textContent = '❌ Password must be at least 6 characters';
+    msgDiv.style.color = 'var(--danger)';
+    return;
+  }
+  if (!email.includes('@')) {
+    msgDiv.textContent = '❌ Enter a valid email';
+    msgDiv.style.color = 'var(--danger)';
+    return;
+  }
+  
+  msgDiv.textContent = 'Creating user...';
+  msgDiv.style.color = 'var(--muted)';
+  
+  const res = await fetch('/api/admin/user/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password, premium })
+  });
+  const data = await res.json();
+  
+  if (data.success) {
+    msgDiv.textContent = `✅ User "${username}" created successfully!`;
+    msgDiv.style.color = 'var(--ok)';
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newEmail').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('newPremium').checked = false;
+    refreshUsers();
+    refreshStats();
+    setTimeout(() => { msgDiv.textContent = ''; }, 3000);
+  } else {
+    msgDiv.textContent = `❌ ${data.message}`;
+    msgDiv.style.color = 'var(--danger)';
+  }
+}
+
+async function refreshAll(){
+  document.getElementById('msg').textContent = 'Refreshing...';
+  await Promise.all([refreshStats(), refreshServers(), refreshUsers()]);
+  document.getElementById('msg').textContent = 'Done ✅';
+  setTimeout(() => { document.getElementById('msg').textContent = ''; }, 2000);
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>]/g, function(m){
+    if(m === '&') return '&amp;';
+    if(m === '<') return '&lt;';
+    if(m === '>') return '&gt;';
+    return m;
+  });
+}
+
+function escapeAttr(s){
+  return encodeURIComponent(s);
+}
+
+document.addEventListener('DOMContentLoaded', refreshAll);
+</script>
+</body>
+</html>
