@@ -30,7 +30,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("PANEL_SECRET_KEY", "CHANGE_ME_" + os.urandom(16).hex())
 
 ADMIN_USERNAME = os.environ.get("ADMIN_USER", "RAGNAR")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASS", "RAGNAR321")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASS", "1211")
 
 # ✅ قائمة origins المسموحة (يمكنك تعديلها)
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5000,http://localhost:3034").split(",")
@@ -49,14 +49,12 @@ def add_cors_headers(response):
     # ✅ للـ Proxy routes (لا تحتاج cookies ويمكن أن تكون مفتوحة للجميع)
     if request.path.startswith('/proxy/'):
         response.headers['Access-Control-Allow-Origin'] = '*'
-        # لا نضيف Access-Control-Allow-Credentials هنا (آمن)
     else:
         # ✅ للـ API routes التي تحتاج مصادقة
         if origin and origin in ALLOWED_ORIGINS:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Credentials'] = 'true'
         elif origin:
-            # إذا كان origin غير مسموح، نمنع الوصول
             response.headers['Access-Control-Allow-Origin'] = 'null'
         else:
             response.headers['Access-Control-Allow-Origin'] = '*'
@@ -66,48 +64,38 @@ def add_cors_headers(response):
     return response
 
 
-# معالجة طلبات OPTIONS المسبقة لـ CORS
 @app.route('/proxy/<owner>/<folder>', methods=['OPTIONS'])
 @app.route('/proxy/<owner>/<folder>/', methods=['OPTIONS'])
 @app.route('/proxy/<owner>/<folder>/<path:subpath>', methods=['OPTIONS'])
 def handle_options(owner, folder, subpath=""):
-    """معالجة طلبات OPTIONS مسبقاً لـ CORS بشكل آمن"""
     response = Response()
-    
-    # ✅ Proxy routes مفتوحة للجميع (بدون credentials)
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
     return response
 
 
-# ================= دعم Railway والمنصات السحابية =================
+# ================= دعم Railway =================
 def get_public_base_url():
-    """الحصول على الرابط العام للمنصة"""
     railway_url = os.environ.get("RAILWAY_STATIC_URL")
     if railway_url:
         return f"https://{railway_url}"
-    
     render_url = os.environ.get("RENDER_EXTERNAL_URL")
     if render_url:
         return render_url
-    
     heroku_url = os.environ.get("HEROKU_APP_NAME")
     if heroku_url:
         return f"https://{heroku_url}.herokuapp.com"
-    
     return None
 
 
 def get_ip():
-    """الحصول على IP العام (لمنصات الـ VPS)"""
     try:
         response = requests.get('https://api.ipify.org', timeout=3)
         if response.status_code == 200:
             return response.text
     except:
         pass
-    
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -119,9 +107,7 @@ def get_ip():
 
 
 def get_project_url(owner: str, folder: str, port: int) -> str:
-    """بناء الرابط الصحيح للمشروع"""
     public_base = get_public_base_url()
-    
     if public_base:
         return f"{public_base}/proxy/{owner}/{folder}"
     else:
@@ -464,7 +450,6 @@ while True:
 
 
 def start_web_project(owner: str, folder: str, startup_file: str):
-    """تشغيل مشروع ويب (Flask) مع احترام المنفذ المحفوظ في meta.json"""
     server_dir = get_server_dir(owner, folder)
     startup_path = os.path.join(server_dir, startup_file)
     
@@ -540,6 +525,17 @@ def stop_proc(key: str):
         except Exception:
             pass
         running_procs.pop(key, None)
+    
+    # ✅ أيضاً أوقف المفتاح الكامل إن وجد
+    if "::" not in key:
+        try:
+            owner, folder = parse_server_key(key, allow_admin=True)
+            admin_key = f"{owner}::{folder}"
+            if admin_key in running_procs:
+                running_procs.pop(admin_key, None)
+            set_state(admin_key, "Offline")
+        except:
+            pass
 
 
 def background_start(key: str, owner: str, folder: str, startup_file: str):
@@ -564,6 +560,11 @@ def background_start(key: str, owner: str, folder: str, startup_file: str):
         time.sleep(2.0)
         if proc.poll() is None:
             set_state(key, "Running")
+            # ✅ مزامنة الحالة مع المفتاح الكامل للأدمن
+            if "::" not in key:
+                admin_key = f"{owner}::{folder}"
+                set_state(admin_key, "Running")
+                running_procs[admin_key] = (proc, logf)
             log_append(key, "[SYSTEM] ✅ Started successfully\n")
         else:
             set_state(key, "Offline")
@@ -573,13 +574,14 @@ def background_start(key: str, owner: str, folder: str, startup_file: str):
         set_state(key, "Offline")
 
 
-# =============== Proxy Routes مع دعم آمن ===============
+# =============== Proxy Routes مع دعم المفتاحين ===============
 @app.route("/proxy/<owner>/<folder>")
 @app.route("/proxy/<owner>/<folder>/")
 @app.route("/proxy/<owner>/<folder>/<path:subpath>")
 def proxy_project(owner, folder, subpath=""):
-    """عرض المشروع - مفتوح للجميع (بدون مصادقة) لأنها مشاريع المستخدمين"""
-    key = f"{owner}::{folder}"
+    """عرض المشروع - يدعم المفاتيح البسيطة والكاملة"""
+    key_full = f"{owner}::{folder}"
+    key_simple = folder
     
     server_dir = get_server_dir(owner, folder)
     if not os.path.isdir(server_dir):
@@ -594,8 +596,27 @@ def proxy_project(owner, folder, subpath=""):
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
     
-    state = get_state(key)
-    if state != "Running":
+    # ✅ التحقق من الحالة تحت المفتاحين
+    state = get_state(key_full)
+    if state == "Offline":
+        state = get_state(key_simple)
+    
+    # ✅ التحقق من العملية تحت المفتاحين
+    proc_tuple = running_procs.get(key_full) or running_procs.get(key_simple)
+    is_running = False
+    
+    if proc_tuple:
+        proc, _ = proc_tuple
+        if proc.poll() is None:
+            is_running = True
+        else:
+            # تنظيف العملية الميتة
+            if key_full in running_procs:
+                del running_procs[key_full]
+            if key_simple in running_procs:
+                del running_procs[key_simple]
+    
+    if not is_running or state != "Running":
         response = Response(f"Server is not running. Current status: {state}", status=404)
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
@@ -666,7 +687,7 @@ def logout():
 
 
 # ---------------------------
-# Auth APIs (بدون create - فقط login)
+# Auth APIs (بدون create)
 # ---------------------------
 @app.route("/api/auth/login", methods=["POST"])
 def api_login():
@@ -693,12 +714,11 @@ def api_login():
 
 
 # ---------------------------
-# Admin API - Create User (بدل صفحة create)
+# Admin API - Create User
 # ---------------------------
 @app.route("/api/admin/user/create", methods=["POST"])
 @admin_required
 def admin_create_user():
-    """Admin only: create a new user"""
     data = request.get_json(silent=True) or {}
     username = (data.get("username") or "").strip()
     email = (data.get("email") or "").strip()
@@ -937,6 +957,10 @@ def server_action(key, act):
     if act in ("stop", "restart"):
         stop_proc(key)
         set_state(key, "Offline")
+        # ✅ مزامنة الإيقاف مع المفتاح الكامل
+        if "::" not in key:
+            admin_key = f"{owner}::{folder}"
+            set_state(admin_key, "Offline")
     
     if act == "stop":
         return jsonify({"success": True})
@@ -945,7 +969,6 @@ def server_action(key, act):
     if not startup:
         return jsonify({"success": False, "message": "No main file set"}), 400
     
-    # مسح اللوج قبل التشغيل الجديد
     open(os.path.join(server_dir, "server.log"), "w", encoding="utf-8").close()
     
     t = threading.Thread(target=background_start, args=(key, owner, folder, startup), daemon=True)
@@ -993,7 +1016,7 @@ def set_server_port(key):
 
 
 # ---------------------------
-# File manager APIs
+# File manager APIs (بدون تغيير)
 # ---------------------------
 @app.route("/files/list/<path:key>")
 @login_required
@@ -1195,7 +1218,6 @@ def admin_server_ban():
     key = (data.get("key") or data.get("folder") or "").strip()
     banned = bool(data.get("banned", True))
     
-    # دعم كل من key و folder
     if "::" not in key:
         found = None
         for s in list_all_servers_for_admin():
@@ -1298,7 +1320,6 @@ def admin_quickstats():
 
 # ================= Auto-start servers after restart =================
 def save_running_servers():
-    """حفظ السيرفرات الشغالة قبل إغلاق التطبيق"""
     running_keys = []
     for key, (proc, _) in running_procs.items():
         if proc.poll() is None:
@@ -1315,7 +1336,6 @@ def save_running_servers():
 
 
 def auto_start_previous_servers():
-    """تشغيل أي سيرفر كان شغالاً قبل إعادة تشغيل التطبيق"""
     state_file = os.path.join(DATA_DIR, "last_state.json")
     
     if not os.path.exists(state_file):
@@ -1328,34 +1348,40 @@ def auto_start_previous_servers():
         started = 0
         for key in last_state.keys():
             try:
-                owner, folder = parse_server_key(key, allow_admin=True)
+                if "::" in key:
+                    owner, folder = key.split("::", 1)
+                else:
+                    # إذا كان المفتاح بسيطاً، نحتاج إلى إيجاد المالك
+                    for o in os.listdir(USERS_ROOT):
+                        if os.path.isdir(get_server_dir(o, key)):
+                            owner, folder = o, key
+                            break
+                    else:
+                        continue
+                
                 meta = read_meta(owner, folder)
                 startup = meta.get("startup_file")
                 if startup and not meta.get("banned", False):
-                    print(f"[AUTO-START] Starting {key}...")
+                    print(f"[AUTO-START] Starting {owner}::{folder}...")
                     t = threading.Thread(target=background_start, args=(key, owner, folder, startup), daemon=True)
                     t.start()
                     started += 1
-                    time.sleep(0.5)  # تجنب ازدحام العمليات
+                    time.sleep(0.5)
             except Exception as e:
                 print(f"[AUTO-START] Failed for {key}: {e}")
         
         print(f"[AUTO-START] Started {started} servers")
-        
-        # حذف الملف بعد القراءة
         os.remove(state_file)
     except Exception as e:
         print(f"[AUTO-START] Error: {e}")
 
 
-# تسجيل الإغلاق لحفظ الحالة
 atexit.register(save_running_servers)
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("SERVER_PORT", 3034))
     
-    # ✅ تشغيل السيرفرات التي كانت شغالة سابقاً (بعد التحديث)
     auto_start_previous_servers()
     
     public_url = get_public_base_url()
@@ -1366,9 +1392,8 @@ if __name__ == "__main__":
     else:
         print(f"\n🚀 RAGNAR HOST RUNNING ON {get_ip()}:{port}")
     print(f"✅ CORS configured securely")
-    print(f"✅ Proxy routes support public access (no login required)")
+    print(f"✅ Proxy supports both simple and full keys")
     print(f"✅ Admin can create users via /admin")
-    print(f"✅ Create page removed - accounts are admin-only")
     print(f"✅ Auto-start: servers will restart automatically after reboot\n")
     
     app.run(host="0.0.0.0", port=port)
