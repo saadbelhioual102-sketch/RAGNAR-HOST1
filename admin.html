@@ -34,13 +34,10 @@
     .tag.ok{color:var(--ok)} .tag.bad{color:var(--danger)} .tag.mid{color:var(--warn)}
     .actions button{margin-right:6px;margin-top:4px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
-    input, select{padding:10px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.35);color:#e9f2f7;outline:none}
+    input{padding:10px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.35);color:#e9f2f7;outline:none}
     .msg{margin-top:10px;color:var(--muted);font-size:12px}
-    .create-box{background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px}
-    .create-box h3{margin:0 0 12px 0;color:var(--accent)}
-    .create-grid{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-    .create-grid .field{flex:1;min-width:140px}
-    .create-grid label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+    .new-user-card{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);margin-bottom:20px}
+    .new-user-card input{width:auto;flex:1;min-width:150px}
   </style>
 </head>
 <body>
@@ -53,7 +50,6 @@
   </div>
 
   <div class="wrap">
-    <!-- Stats -->
     <div class="grid">
       <div class="card"><div class="k">Servers Total</div><div class="v" id="st_total">0</div></div>
       <div class="card"><div class="k">Running</div><div class="v" id="st_run">0</div></div>
@@ -68,52 +64,43 @@
       <div class="card"><div class="k">Rules</div><div class="v" style="font-size:13px">Normal=1 server<br>Premium=16 servers</div></div>
     </div>
 
-    <!-- Create New User Section -->
-    <div class="create-box">
-      <h3>➕ Create New User</h3>
-      <div class="create-grid">
-        <div class="field">
-          <input type="text" id="newUsername" placeholder="Username" style="width:100%">
-        </div>
-        <div class="field">
-          <input type="email" id="newEmail" placeholder="Email" style="width:100%">
-        </div>
-        <div class="field">
-          <input type="password" id="newPassword" placeholder="Password (min 6)" style="width:100%">
-        </div>
-        <div class="field">
-          <label>
-            <input type="checkbox" id="newPremium"> Premium (16 servers)
-          </label>
-        </div>
-        <div class="field">
-          <button class="btn btn-accent" onclick="createUser()" style="width:100%">Create User</button>
-        </div>
-      </div>
-      <div id="createMsg" class="msg"></div>
-    </div>
-
     <div class="row">
-      <button class="btn btn-accent" onclick="refreshAll()">Refresh All</button>
+      <button class="btn btn-accent" onclick="refreshAll()">Refresh</button>
       <span class="msg" id="msg"></span>
     </div>
 
-    <!-- Servers Table -->
-    <h2>📡 Servers</h2>
+    <h2>➕ Add New User</h2>
+    <div class="card new-user-card">
+      <div class="row">
+        <input type="text" id="newUsername" placeholder="Username" style="flex:1">
+        <input type="email" id="newEmail" placeholder="Email" style="flex:1">
+        <input type="password" id="newPassword" placeholder="Password" style="flex:1">
+        <label style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="newPremium"> Premium
+        </label>
+        <button class="btn btn-accent" onclick="createUser()">Create User</button>
+      </div>
+      <div class="msg" id="createMsg"></div>
+    </div>
+
+    <h2>Servers</h2>
     <table>
-      <thead><tr><th>Folder</th><th>Name</th><th>Owner</th><th>Main</th><th>Status</th><th>Ban</th></tr></thead>
+      <thead>
+        <tr><th>Folder</th><th>Name</th><th>Owner</th><th>Main</th><th>Status</th><th>Ban</th></tr>
+      </thead>
       <tbody id="serversT"></tbody>
     </table>
 
-    <!-- Users Table -->
-    <h2 style="margin-top:26px">👥 Users</h2>
-    <div class="row"><input id="searchUser" placeholder="Search username..." oninput="filterUsers()" style="width:250px"></div>
+    <h2 style="margin-top:26px">Users</h2>
+    <div class="row"><input id="searchUser" placeholder="search username..." oninput="filterUsers()"></div>
     <table>
-      <thead><tr><th>Username</th><th>Email</th><th>Servers</th><th>Active</th><th>Premium</th><th>Actions</th></tr></thead>
+      <thead>
+        <tr><th>Username</th><th>Email</th><th>Servers</th><th>Active</th><th>Premium</th><th>Actions</th></tr>
+      </thead>
       <tbody id="usersT"></tbody>
     </table>
 
-    <div class="msg">Admin can ban/unban users and set premium. Create new users using the form above.</div>
+    <div class="msg">Admin can ban/unban users, set premium, and create new users.</div>
   </div>
 
 <script>
@@ -131,13 +118,13 @@ async function refreshStats(){
   const r=await fetch('/api/admin/quickstats');
   const d=await r.json();
   const s=d.stats||{};
-  document.getElementById('st_total').textContent=s.servers_total||0;
-  document.getElementById('st_run').textContent=s.servers_running||0;
-  document.getElementById('st_ins').textContent=s.servers_installing||0;
-  document.getElementById('st_ban').textContent=s.servers_banned||0;
-  document.getElementById('u_total').textContent=s.users_total||0;
-  document.getElementById('u_active').textContent=s.users_active||0;
-  document.getElementById('u_premium').textContent=s.users_premium||0;
+  st_total.textContent=s.servers_total||0;
+  st_run.textContent=s.servers_running||0;
+  st_ins.textContent=s.servers_installing||0;
+  st_ban.textContent=s.servers_banned||0;
+  u_total.textContent=s.users_total||0;
+  u_active.textContent=s.users_active||0;
+  u_premium.textContent=s.users_premium||0;
 }
 
 async function refreshServers(){
@@ -147,27 +134,22 @@ async function refreshServers(){
   (d.servers||[]).forEach(s=>{
     t.innerHTML += `
       <tr>
-        <td>${escapeHtml(s.folder)}</td>
-        <td>${escapeHtml(s.display_name)}</td>
-        <td>${escapeHtml(s.owner)}</td>
-        <td>${escapeHtml(s.startup_file || '')}</td>
+        <td>${s.folder}</td>
+        <td>${s.display_name}</td>
+        <td>${s.owner}</td>
+        <td>${s.startup_file || ''}</td>
         <td>${tagStatus(s.status)}</td>
         <td class="actions">
           ${s.banned
-            ? `<button class="btn" onclick="banServer('${escapeAttr(s.key || s.folder)}', false)">Unban</button>`
-            : `<button class="btn" style="border-color:rgba(255,107,107,.35);color:var(--danger)" onclick="banServer('${escapeAttr(s.key || s.folder)}', true)">Ban</button>`}
+            ? `<button class="btn" onclick="banServer('${s.folder}', false)">Unban</button>`
+            : `<button class="btn" style="border-color:rgba(255,107,107,.35);color:var(--danger)" onclick="banServer('${s.folder}', true)">Ban</button>`}
         </td>
       </tr>`;
   });
 }
 
-async function banServer(folderOrKey, banned){
-  if(!confirm(banned ? 'Are you sure you want to BAN this server?' : 'Are you sure you want to UNBAN this server?')) return;
-  await fetch('/api/admin/server/ban',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({key: folderOrKey, banned})
-  });
+async function banServer(folder, banned){
+  await fetch('/api/admin/server/ban',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({folder,banned})});
   refreshAll();
 }
 
@@ -183,105 +165,79 @@ function renderUsers(arr){
   arr.forEach(u=>{
     t.innerHTML += `
       <tr>
-        <td>${escapeHtml(u.username)}</td>
-        <td>${escapeHtml(u.email || '')}</td>
+        <td>${u.username}</td>
+        <td>${u.email || ''}</td>
         <td>${u.servers}</td>
         <td>${u.active ? '<span class="tag ok">ACTIVE</span>' : '<span class="tag bad">BANNED</span>'}</td>
         <td>${u.premium ? '<span class="tag ok">PREMIUM</span>' : '<span class="tag">NORMAL</span>'}</td>
         <td class="actions">
-          <button class="btn" onclick="setActive('${escapeAttr(u.username)}', ${!u.active})">${u.active ? 'Ban' : 'Unban'}</button>
-          <button class="btn" onclick="setPremium('${escapeAttr(u.username)}', ${!u.premium})">${u.premium ? 'Remove Premium' : 'Make Premium'}</button>
+          <button class="btn" onclick="setActive('${u.username}', ${u.active ? 'false':'true'})">${u.active ? 'Ban' : 'Unban'}</button>
+          <button class="btn" onclick="setPremium('${u.username}', ${u.premium ? 'false':'true'})">${u.premium ? 'Remove Premium' : 'Make Premium'}</button>
         </td>
       </tr>`;
   });
 }
 
+async function createUser(){
+  const username=document.getElementById('newUsername').value.trim();
+  const email=document.getElementById('newEmail').value.trim();
+  const password=document.getElementById('newPassword').value;
+  const premium=document.getElementById('newPremium').checked;
+  const msgDiv=document.getElementById('createMsg');
+  
+  if(!username || username.length<3){
+    msgDiv.textContent='Username must be at least 3 characters';
+    return;
+  }
+  if(!email || !email.includes('@')){
+    msgDiv.textContent='Valid email required';
+    return;
+  }
+  if(!password || password.length<6){
+    msgDiv.textContent='Password must be at least 6 characters';
+    return;
+  }
+  
+  msgDiv.textContent='Creating...';
+  const r=await fetch('/api/admin/user/create',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username,email,password,premium})
+  });
+  const d=await r.json();
+  if(!d.success){
+    msgDiv.textContent=d.message||'Creation failed';
+  } else {
+    msgDiv.textContent='User created ✅';
+    document.getElementById('newUsername').value='';
+    document.getElementById('newEmail').value='';
+    document.getElementById('newPassword').value='';
+    document.getElementById('newPremium').checked=false;
+    refreshUsers();
+    refreshStats();
+    setTimeout(()=>msgDiv.textContent='', 2000);
+  }
+}
+
 async function setActive(username, active){
-  if(!confirm(active ? `Activate user "${username}"?` : `Ban user "${username}"?`)) return;
   await fetch('/api/admin/user/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,active})});
   refreshUsers(); refreshStats();
 }
-
 async function setPremium(username, premium){
   await fetch('/api/admin/user/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,premium})});
   refreshUsers(); refreshStats();
 }
-
 function filterUsers(){
   const q=(document.getElementById('searchUser').value||'').toLowerCase().trim();
   if(!q) return renderUsers(usersCache);
   renderUsers(usersCache.filter(u => (u.username||'').toLowerCase().includes(q)));
 }
 
-async function createUser() {
-  const username = document.getElementById('newUsername').value.trim();
-  const email = document.getElementById('newEmail').value.trim();
-  const password = document.getElementById('newPassword').value;
-  const premium = document.getElementById('newPremium').checked;
-  const msgDiv = document.getElementById('createMsg');
-  
-  if (!username || !email || !password) {
-    msgDiv.textContent = '❌ Please fill all fields';
-    msgDiv.style.color = 'var(--danger)';
-    return;
-  }
-  if (password.length < 6) {
-    msgDiv.textContent = '❌ Password must be at least 6 characters';
-    msgDiv.style.color = 'var(--danger)';
-    return;
-  }
-  if (!email.includes('@')) {
-    msgDiv.textContent = '❌ Enter a valid email';
-    msgDiv.style.color = 'var(--danger)';
-    return;
-  }
-  
-  msgDiv.textContent = 'Creating user...';
-  msgDiv.style.color = 'var(--muted)';
-  
-  const res = await fetch('/api/admin/user/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password, premium })
-  });
-  const data = await res.json();
-  
-  if (data.success) {
-    msgDiv.textContent = `✅ User "${username}" created successfully!`;
-    msgDiv.style.color = 'var(--ok)';
-    document.getElementById('newUsername').value = '';
-    document.getElementById('newEmail').value = '';
-    document.getElementById('newPassword').value = '';
-    document.getElementById('newPremium').checked = false;
-    refreshUsers();
-    refreshStats();
-    setTimeout(() => { msgDiv.textContent = ''; }, 3000);
-  } else {
-    msgDiv.textContent = `❌ ${data.message}`;
-    msgDiv.style.color = 'var(--danger)';
-  }
-}
-
 async function refreshAll(){
-  document.getElementById('msg').textContent = 'Refreshing...';
+  document.getElementById('msg').textContent='Refreshing...';
   await Promise.all([refreshStats(), refreshServers(), refreshUsers()]);
-  document.getElementById('msg').textContent = 'Done ✅';
-  setTimeout(() => { document.getElementById('msg').textContent = ''; }, 2000);
+  document.getElementById('msg').textContent='Done ✅';
 }
-
-function escapeHtml(s){
-  return (s||'').replace(/[&<>]/g, function(m){
-    if(m === '&') return '&amp;';
-    if(m === '<') return '&lt;';
-    if(m === '>') return '&gt;';
-    return m;
-  });
-}
-
-function escapeAttr(s){
-  return encodeURIComponent(s);
-}
-
 document.addEventListener('DOMContentLoaded', refreshAll);
 </script>
 </body>
