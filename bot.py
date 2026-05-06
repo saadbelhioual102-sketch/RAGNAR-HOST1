@@ -9,21 +9,11 @@ import threading
 import time
 import sys
 
-try:
-    import psutil
-    import requests
-    from flask import Flask, send_from_directory, request, jsonify, redirect, session, Response
-    from werkzeug.security import generate_password_hash, check_password_hash
-    from functools import wraps
-except ImportError as e:
-    print(f"⚠️ Missing dependency: {e}")
-    print("📦 Installing required packages...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "flask", "werkzeug", "psutil", "requests"])
-    import psutil
-    import requests
-    from flask import Flask, send_from_directory, request, jsonify, redirect, session, Response
-    from werkzeug.security import generate_password_hash, check_password_hash
-    from functools import wraps
+import psutil
+import requests
+from flask import Flask, send_from_directory, request, jsonify, redirect, session, Response
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -38,13 +28,6 @@ os.makedirs(DATA_DIR, exist_ok=True)
 app = Flask(__name__)
 app.secret_key = os.environ.get("PANEL_SECRET_KEY", "CHANGE_ME_" + os.urandom(16).hex())
 
-# إعدادات الأمان للجلسات
-app.config.update(
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_SECURE=bool(os.environ.get("RENDER", False))  # HTTPS فقط على Render
-)
-
 ADMIN_USERNAME = os.environ.get("ADMIN_USER", "hama")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASS", "1211")
 
@@ -53,20 +36,41 @@ server_states = {}
 lock = threading.Lock()
 
 
-# ================= دعم Render والمنصات السحابية =================
+# ================= دعم CORS للجميع (حل المشكلة 403) =================
+@app.after_request
+def add_cors_headers(response):
+    """إضافة رؤوس CORS للسماح لجميع المواقع بالوصول"""
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
+
+
+# معالجة طلبات OPTIONS المسبقة لـ CORS
+@app.route('/proxy/<owner>/<folder>', methods=['OPTIONS'])
+@app.route('/proxy/<owner>/<folder>/', methods=['OPTIONS'])
+@app.route('/proxy/<owner>/<folder>/<path:subpath>', methods=['OPTIONS'])
+def handle_options(owner, folder, subpath=""):
+    """معالجة طلبات OPTIONS مسبقاً لـ CORS"""
+    response = Response()
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    return response
+
+
+# ================= دعم Railway والمنصات السحابية =================
 def get_public_base_url():
     """الحصول على الرابط العام للمنصة"""
-    # Render
-    render_url = os.environ.get("RENDER_EXTERNAL_URL")
-    if render_url:
-        return render_url
-    
-    # Railway
     railway_url = os.environ.get("RAILWAY_STATIC_URL")
     if railway_url:
         return f"https://{railway_url}"
     
-    # Heroku
+    render_url = os.environ.get("RENDER_EXTERNAL_URL")
+    if render_url:
+        return render_url
+    
     heroku_url = os.environ.get("HEROKU_APP_NAME")
     if heroku_url:
         return f"https://{heroku_url}.herokuapp.com"
@@ -75,7 +79,7 @@ def get_public_base_url():
 
 
 def get_ip():
-    """الحصول على IP العام"""
+    """الحصول على IP العام (لمنصات الـ VPS)"""
     try:
         response = requests.get('https://api.ipify.org', timeout=3)
         if response.status_code == 200:
@@ -94,7 +98,11 @@ def get_ip():
 
 
 def get_project_url(owner: str, folder: str, port: int) -> str:
-    """بناء الرابط الصحيح للمشروع"""
+    """
+    بناء الرابط الصحيح للمشروع.
+    - على Railway: https://اسم-التطبيق.railway.app/proxy/owner/folder
+    - على VPS: http://IP:PORT
+    """
     public_base = get_public_base_url()
     
     if public_base:
@@ -307,29 +315,6 @@ def write_meta(owner: str, folder: str, meta):
 
 
 # ---------------------------
-# CORS support
-# ---------------------------
-@app.after_request
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    return response
-
-
-@app.route('/proxy/<owner>/<folder>', methods=['OPTIONS'])
-@app.route('/proxy/<owner>/<folder>/', methods=['OPTIONS'])
-@app.route('/proxy/<owner>/<folder>/<path:subpath>', methods=['OPTIONS'])
-def handle_options(owner, folder, subpath=""):
-    response = Response()
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    return response
-
-
-# ---------------------------
 # Auto-install system
 # ---------------------------
 def sha256_file(path):
@@ -462,6 +447,7 @@ while True:
 
 
 def start_web_project(owner: str, folder: str, startup_file: str):
+    """تشغيل مشروع ويب (Flask) مع احترام المنفذ المحفوظ في meta.json"""
     server_dir = get_server_dir(owner, folder)
     startup_path = os.path.join(server_dir, startup_file)
     
@@ -558,7 +544,7 @@ def background_start(key: str, owner: str, folder: str, startup_file: str):
             proc, logf = start_with_autoinstall(owner, folder, startup_file)
         
         running_procs[key] = (proc, logf)
-        time.sleep(3.0)
+        time.sleep(2.0)
         if proc.poll() is None:
             set_state(key, "Running")
             log_append(key, "[SYSTEM] ✅ Started successfully\n")
@@ -570,13 +556,17 @@ def background_start(key: str, owner: str, folder: str, startup_file: str):
         set_state(key, "Offline")
 
 
-# =============== Proxy Routes ===============
+# =============== Proxy Routes مع دعم الوصول العام ===============
 @app.route("/proxy/<owner>/<folder>")
 @app.route("/proxy/<owner>/<folder>/")
 @app.route("/proxy/<owner>/<folder>/<path:subpath>")
 def proxy_project(owner, folder, subpath=""):
+    """
+    ✅ تم إصلاح مشكلة الوصول: الآن يمكن لأي شخص الدخول إلى المشروع من أي متصفح أو جهاز
+    """
     key = f"{owner}::{folder}"
     
+    # ✅ التحقق من وجود المشروع
     server_dir = get_server_dir(owner, folder)
     if not os.path.isdir(server_dir):
         response = Response("Project not found", status=404)
@@ -585,11 +575,13 @@ def proxy_project(owner, folder, subpath=""):
     
     meta = read_meta(owner, folder)
     
+    # ✅ التحقق من إعدادات الخصوصية (جديد)
     if not meta.get("public", True):
         response = Response("This project is private", status=403)
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
     
+    # التحقق من الحظر من الأدمن فقط (وليس من المصادقة)
     if meta.get("banned", False):
         response = Response("This server has been banned by admin", status=403)
         response.headers['Access-Control-Allow-Origin'] = '*'
@@ -607,7 +599,10 @@ def proxy_project(owner, folder, subpath=""):
         target_url += f"?{request.query_string.decode()}"
     
     try:
+        # توجيه الطلب إلى المشروع الداخلي
         headers = {k: v for k, v in request.headers if k.lower() != 'host'}
+        
+        # تجاهل رأس Cookie للمصادقة (حتى لا يتعارض)
         headers.pop('Cookie', None)
         
         resp = requests.request(
@@ -617,9 +612,10 @@ def proxy_project(owner, folder, subpath=""):
             data=request.get_data(),
             cookies=request.cookies,
             allow_redirects=False,
-            timeout=60
+            timeout=60  # زيادة المهلة إلى 60 ثانية
         )
         
+        # إضافة رؤوس CORS للاستجابة
         response = Response(resp.content, status=resp.status_code, headers=dict(resp.headers))
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Credentials'] = 'true'
@@ -665,7 +661,7 @@ def logout():
 
 
 # ---------------------------
-# Auth APIs
+# Auth APIs (معدل - بدون create)
 # ---------------------------
 @app.route("/api/auth/login", methods=["POST"])
 def api_login():
@@ -766,7 +762,11 @@ def add_server():
     if not folder:
         return jsonify({"success": False, "message": "Invalid server name"}), 400
     
-    owner = current_username()
+    if is_admin_session():
+        owner = current_username()
+    else:
+        owner = current_username()
+    
     ensure_user_dirs(owner)
     
     if not is_admin_session():
@@ -824,19 +824,19 @@ def server_stats(key):
     
     if proc_tuple:
         proc, _logf = proc_tuple
-        try:
-            if proc.poll() is None:
-                running = True
+        if psutil.pid_exists(proc.pid):
+            try:
                 p = psutil.Process(proc.pid)
-                cpu = f"{p.cpu_percent(interval=0.1)}%"
-                mem = f"{p.memory_info().rss / 1024 / 1024:.1f} MB"
-        except Exception:
-            pass
+                if p.is_running() and p.status() != psutil.STATUS_ZOMBIE:
+                    running = True
+                    cpu = f"{p.cpu_percent(interval=None)}%"
+                    mem = f"{p.memory_info().rss / 1024 / 1024:.1f} MB"
+            except Exception:
+                pass
     
     log_path = os.path.join(server_dir, "server.log")
     try:
         logs = open(log_path, "r", encoding="utf-8", errors="ignore").read() if os.path.exists(log_path) else ""
-        logs = logs[-20000:]  # آخر 20000 حرف فقط
     except Exception:
         logs = ""
     
@@ -889,9 +889,7 @@ def server_action(key, act):
     
     startup = meta.get("startup_file") or ""
     if not startup:
-        return jsonify({"success": False, "message": "No main file set"}), 400
-    
-    # مسح اللوج القديم
+        return jsonify({"success": False, "message": "No main file set"}), 400    
     open(os.path.join(server_dir, "server.log"), "w", encoding="utf-8").close()
     
     t = threading.Thread(target=background_start, args=(key, owner, folder, startup), daemon=True)
@@ -939,7 +937,7 @@ def set_server_port(key):
 
 
 # ---------------------------
-# File manager APIs (مختصرة بسبب طول الملف)
+# File manager APIs
 # ---------------------------
 @app.route("/files/list/<path:key>")
 @login_required
@@ -1083,6 +1081,7 @@ def file_upload(key):
     if not can_access_key(key):
         return jsonify({"success": False, "message": "Forbidden"}), 403
     
+    # قائمة الملفات الممنوعة
     DENIED_EXT = ('.pyc', '.sh', '.exe', '.bat', '.env', '.pem', '.key')
     
     rel = request.args.get("path", "") or ""
@@ -1108,6 +1107,7 @@ def file_upload(key):
             continue
         filename = os.path.basename(f.filename)
         
+        # منع رفع الملفات الخطيرة
         if filename.lower().endswith(DENIED_EXT):
             continue
         
@@ -1131,7 +1131,7 @@ def file_upload(key):
 
 
 # ---------------------------
-# Admin APIs
+# Admin APIs (معدل - مع إضافة create user)
 # ---------------------------
 @app.route("/api/admin/servers")
 @admin_required
@@ -1146,6 +1146,7 @@ def admin_server_ban():
     folder = (data.get("folder") or "").strip()
     banned = bool(data.get("banned", True))
     
+    # البحث عن المالك
     found_owner = None
     if os.path.isdir(USERS_ROOT):
         for owner in os.listdir(USERS_ROOT):
@@ -1198,12 +1199,14 @@ def admin_users():
 @app.route("/api/admin/user/create", methods=["POST"])
 @admin_required
 def admin_user_create():
+    """إنشاء مستخدم جديد بواسطة الأدمن"""
     data = request.get_json(silent=True) or {}
     username = (data.get("username") or "").strip()
     email = (data.get("email") or "").strip()
     password = data.get("password") or ""
     premium = bool(data.get("premium", False))
     
+    # التحقق من صحة البيانات
     if not username or len(username) < 3:
         return jsonify({"success": False, "message": "Username must be at least 3 chars"}), 400
     if not re.fullmatch(r"[A-Za-z0-9_\.]+", username):
@@ -1285,19 +1288,17 @@ def admin_quickstats():
 
 
 if __name__ == "__main__":
+    # دعم منفذ Railway
     port = int(os.environ.get("PORT", os.environ.get("SERVER_PORT", 3034)))
-    debug_mode = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
-    
     public_url = get_public_base_url()
     if public_url:
-        print(f"\n🚀 RAGNAR HOST RUNNING ON RENDER/RAILWAY")
+        print(f"\n🚀 RAGNAR HOST RUNNING ON RAILWAY")
         print(f"📍 Main URL: {public_url}")
         print(f"📍 Proxy URL: {public_url}/proxy/username/folder")
     else:
         print(f"\n🚀 RAGNAR HOST RUNNING ON {get_ip()}:{port}")
     print(f"✅ CORS enabled for all origins")
-    print(f"✅ All proxy routes support public access")
+    print(f"✅ All proxy routes support public access (no login required)")
     print(f"✅ Admin can create users from /admin panel")
     print(f"✅ Self-registration disabled\n")
-    
-    app.run(host="0.0.0.0", port=port, debug=debug_mode)
+    app.run(host="0.0.0.0", port=port)
